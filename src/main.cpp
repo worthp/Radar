@@ -2,9 +2,13 @@
 #include <ESP8266mDNS.h>
 #include <ESP8266WebServer.h>
 
+#include <kld7.h>
+
 ESP8266WebServer server(80);
 
 void handleRoot();
+
+KLD7 radar;
 
 void setup() {
     // WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
@@ -13,7 +17,7 @@ void setup() {
     // put your setup code here, to run once:
     // 
     Serial.begin(115200);
-    //Serial1.begin(115200);
+    Serial1.begin(115200);
     
     //WiFiManager, Local intialization. Once its business is done, there is no need to keep it around
     WiFiManager wm;
@@ -42,9 +46,18 @@ void setup() {
 
         server.begin(); // start http server
         server.on("/", handleRoot);
-
-        Serial.swap();
     }
+    
+    radar.setSerialConnection(&Serial1);
+    
+    if (radar.init() != KLD7::OK) {
+        Serial.println("radar is not ok");
+    } else {
+        Serial.println("radar is ok");
+     }
+    Serial.println("setup() complete");
+    Serial.flush();
+    Serial.swap();
 }
 
 void handleRoot() {
@@ -53,16 +66,14 @@ void handleRoot() {
     m.concat(millis());
     m.concat("]");
 
+    radar.getNextFrameData();
+
     server.send(200, "text/plain", m);
 }
 
-bool go = true;
 void loop() {
-//    delay(20);
-    Serial.print("can you see me now????");
+    delay(20);
     MDNS.update();
-    if (go) {
-        server.handleClient();
-        //go = false;
-    }
+    server.handleClient();
+    //radar.init();
 }
