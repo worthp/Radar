@@ -16,7 +16,7 @@ void setup() {
 
     // put your setup code here, to run once:
     // 
-    Serial.begin(115200);
+    Serial.begin(115200, SERIAL_8E1);
     Serial1.begin(115200);
     
     //WiFiManager, Local intialization. Once its business is done, there is no need to keep it around
@@ -48,32 +48,30 @@ void setup() {
         server.on("/", handleRoot);
     }
     
-    radar.setSerialConnection(&Serial1);
-    
-    if (radar.init() != KLD7::OK) {
-        Serial.println("radar is not ok");
-    } else {
-        Serial.println("radar is ok");
-     }
-    Serial.println("setup() complete");
-    Serial.flush();
+    Serial.println("wifi/http setup() complete");
+    Serial.flush(); // just cuz i don't trust anything - even what flush does :(
+
+    // use alternate rx/tx for KLD7
     Serial.swap();
+    
+    // tell radar which serial port to use
+    radar.setSerialConnection(&Serial);
+    if (radar.init() != KLD7::OK) {
+        Serial.swap();
+        Serial.println("radar is ok");
+    }
 }
 
 void handleRoot() {
-    String m ;
-    m.concat("you got here! [");
-    m.concat(millis());
-    m.concat("]");
-
     radar.getNextFrameData();
 
-    server.send(200, "text/plain", m);
+    server.send(200, "text/json", radar.getStatus());
 }
 
 void loop() {
-    delay(20);
+    delay(2);
+    //radar.getNextFrameData();
+
     MDNS.update();
     server.handleClient();
-    //radar.init();
 }

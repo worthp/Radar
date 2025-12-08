@@ -41,16 +41,22 @@ public:
         TIMEOUT        
     };
 
-    void setSerialConnection(HardwareSerial *connection);
-    RESPONSE init();
-    RESPONSE getRadarParameters();
-    RESPONSE getNextFrameData();
-    RESPONSE getResponse();
+    String status = "";
 
     uint16_t distance;
     int16_t speed;
     int16_t angle;
     uint16_t magnitude;
+
+    void setSerialConnection(HardwareSerial *connection);
+    
+    void setStatus(String s);
+    void setStatus(const char* s);
+    String getStatus();
+
+    RESPONSE init();
+    RESPONSE getRadarParameters();
+    RESPONSE getNextFrameData();
 
     void test();
 };

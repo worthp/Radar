@@ -5,9 +5,23 @@
 void KLD7::setSerialConnection (HardwareSerial *connection) {
     radarConnection = connection;
 }
+
 KLD7::RESPONSE KLD7::init() {
-    radarConnection->println("KDL7.init()");
-    test();
+    byte buf[] = {'I', 'N', 'I', 'T',
+                    0x04, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00};
+    radarConnection->write(buf, sizeof(buf));
+
+    char hdr[8];
+    char response[1];
+    radarConnection->read(hdr, sizeof(hdr)); // TODO: do some sanity check
+    radarConnection->read(response, sizeof(response));
+
+    char s[128];
+    sprintf(s, "[\"%c%c%c%c\",\"%x%x%x%x\", \"%x\"]",
+                hdr[0], hdr[1], hdr[2], hdr[3], hdr[4], hdr[5], hdr[6], hdr[7], response[0]);
+    setStatus(s);
+
     return OK;
 }
 
@@ -16,40 +30,70 @@ KLD7::RESPONSE KLD7::getRadarParameters() {
 }
 
 KLD7::RESPONSE KLD7::getNextFrameData() {
-    radarConnection->printf("distance[%d] speed[%d] angle[%d] magnitude[%d]\n", distance, speed, angle, magnitude);
-    return OK;
-}
+    byte buf[] = {'G', 'N', 'F', 'D',
+                    0x04, 0x00, 0x00, 0x00,
+                    0x08, 0x00, 0x00, 0x00};
+    radarConnection->write(buf, sizeof(buf));
 
-KLD7::RESPONSE KLD7::getResponse() {
-    return OK;
-}
+    char hdr[8];
+    char response[1];
+    radarConnection->read(hdr, sizeof(hdr));
+    radarConnection->read(response, sizeof(response));
 
-void KLD7::test() {
-    uint8_t header[4] = {0x47, 0x4e, 0x46, 0x44};
-    uint8_t length[4] {0x04, 0x00, 0x00, 0x00};
-    uint32_t payloadSize = 0;
-
-    uint8_t bu[8] = {0x50, 0x00, 0x97, 0xff, 0x2f, 0x07, 0x15, 0x18};
-
+    char s[128];
+    sprintf(s, "[\"%c%c%c%c\",\"%x%x%x%x\", \"%x\"]",
+                hdr[0], hdr[1], hdr[2], hdr[3], hdr[4], hdr[5], hdr[6], hdr[7], response[0]);
+    setStatus(s);
+    
     distance = 0;
     speed = 0;
     angle = 0;
     magnitude = 0;
+    char tdat[8];
+    radarConnection->read(hdr, sizeof(hdr)); //TODO: sanity check
+    
+    sprintf(s, "[\"%c%c%c%c\",\"%x%x%x%x\"]",
+                hdr[0], hdr[1], hdr[2], hdr[3], hdr[4], hdr[5], hdr[6], hdr[7]);
+    setStatus(s);
 
-    distance = (bu[1] << 8) | (bu[0]);
-    speed = (bu[3] << 8) | (bu[2]);
-    angle = (bu[5] << 8) | (bu[4]);
-    magnitude = (bu[7] << 8) | (bu[6]);
+    if (hdr[4] > 0) { // target data
+        radarConnection->read(tdat, sizeof(tdat));
 
-    if (!strncmp((char *) header, "GNFD", 4)) {
-        payloadSize = (length[3] << 24) | (length[2] << 16) | (length[1] << 8) | (length[0]);
-        if (payloadSize == 4) {
-            printf("distance[%d] speed[%d] angle[%d] magnitude[%d]\n", distance, speed, angle, magnitude);
-        } else {
-            printf("got work to do on payload size\n");
-        }
-    } else {
-        printf("header not recognized [%c%c%c%c]\n",  header[0], header[1], header[2], header[3]);
+        distance = tdat[1] << 8 | tdat[0];
+        speed = tdat[3] << 8 | tdat[2];
+        angle = tdat[5] << 8 | tdat[4];
+        magnitude = tdat[7] << 8 | tdat[6];
+
+        sprintf(s, "[\"%c%c%c%c\",\"%x%x%x%x\"]",
+                    tdat[0], tdat[1], tdat[2], tdat[3], tdat[4], tdat[5], tdat[6], tdat[7]);
+        //setStatus(s);
     }
+    
+    sprintf(s, "[\"metrics\",\"%d\",\"%d\",\"%d\",\"%d\"]", distance, speed, angle, magnitude);
+    setStatus(s);
+    return OK;
+}
+
+void KLD7::setStatus(String s) {
+    setStatus(s.c_str());
+}
+void KLD7::setStatus(const char* s) {
+    if (status.length() > 2048) {
+        status.clear();
+        status.concat(s);
+    } else {
+        status.concat(",");status.concat(s);
+    }
+}
+
+String KLD7::getStatus() {
+    String s = "";
+    s.concat("{");
+    s.concat("\"time\":\"0900\",");
+    s.concat("\"data\":[");
+    s.concat(status);
+    s.concat("]");
+    s.concat("}");
+    return s;
 }
 
