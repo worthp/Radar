@@ -3,12 +3,15 @@
 #include <ESP8266WebServer.h>
 
 #include <kld7.h>
+#include <web.h>
 
 ESP8266WebServer server(80);
 
 void handleRoot();
+void handleStats();
 
 KLD7 radar;
+Web web;
 
 void setup() {
     // WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
@@ -46,6 +49,7 @@ void setup() {
 
         server.begin(); // start http server
         server.on("/", handleRoot);
+        server.on("/stats/", handleStats);
     }
     
     Serial.println("wifi/http setup() complete");
@@ -61,12 +65,16 @@ void setup() {
 }
 
 void handleRoot() {
+    //server.send(200, "text/json", radar.getStatus());
+    server.send(200, "text/html", web.homePage(radar));
+}
 
-    server.send(200, "text/json", radar.getStatus());
+void handleStats() {
+    server.send(200, "text/html", web.statsPage(radar));
 }
 
 void loop() {
-    delay(5);
+    delay(100);
     radar.getNextFrameData();
 
     MDNS.update();

@@ -1,6 +1,6 @@
 #include <cstdint>
 #ifndef __KLD7_H
-#define __KLD_H
+#define __KLD7_H
 
 class KLD7 {
     
@@ -47,28 +47,46 @@ public:
         int16_t speed;
         int16_t angle;
         uint16_t magnitude;
-    } ;
+    };
     
-    int tDataCount = 0;
-    struct tDataEntry tData[1000];
+    struct radarStats {
+        uint16_t zeroTDATCount = 0;
+        uint16_t nonZeroTDATCount = 0;
 
+        uint16_t minDistance = 0;
+        uint16_t maxDistance = 0;
+        
+        int16_t minSpeed;
+        int16_t maxSpeed;
+
+        uint16_t minMagnitude = 0;
+        uint16_t maxMagnitude = 0;
+    };
+    radarStats stats;
+    
+    int tDataWriteIndex = 0;
+    struct tDataEntry tData[10];
+    
     String status;
-
-    uint16_t distance;
-    int16_t speed;
-    int16_t angle;
-    uint16_t magnitude;
 
     void setSerialConnection(HardwareSerial *connection);
     
     void setStatus(String s);
     void setStatus(const char* s);
     String getStatus();
+    
+    // no need to stack allocate on every read
+    uint16_t distance;
+    int16_t speed;
+    int16_t angle;
+    uint16_t magnitude;
+    void addTDATReading(uint16_t distance,
+                        int16_t speed,
+                        int16_t angle,
+                        uint16_t magnitude);
 
     RESPONSE init();
     RESPONSE getRadarParameters();
     RESPONSE getNextFrameData();
-
-    void test();
 };
 #endif

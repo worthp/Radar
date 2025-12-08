@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+
+<head>
+    <meta http-equiv='refresh' content='1'>
+    <style>
+        html {
+            font-size: large;
+        } ;
+
+        th,
+        td {
+            border: 1px solid rgb(160 160 160);
+            padding: 8px 10px;
+        }
+
+        th[scope='col'] {
+            background-color: #505050;
+            color: white;
+        }
+
+        th[scope='row'] {
+            background-color: #d6ecd4;
+        }
+
+        td {
+            text-align: center;
+        }
+
+        tr:nth-of-type(even) {
+            background-color: #eeeeee;
+        }
+
+        table {
+            border-collapse: collapse;
+            border: 2px solid rgb(140 140 140);
+            font-family: sans-serif;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+
+        caption {
+            caption-side: bottom;
+            padding: 10px;
+        }
+    </style>
+</head>
+<html>
+
+<body>
+    <table>
+        <tr>
+            <td><a href='/'>Home</a></td>
+            <td><a href='/stats/'>Stats</a></td>
+        </tr>
+    </table>
+    <table>
+        <tr>
+            <td><b>Zero Count</b></td>
+            <td>2816</td>
+        </tr>
+        <tr>
+            <td><b>Non-Zero Count</b></td>
+            <td>1156</td< /tr>
+    </table>
+    <table>
+        <thead>
+            <tr>
+                <th scope='col'>Measure</th>
+                <th scope='col'>Min</th>
+                <th scope='col'>Max</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <th scope='row'>Distance</th>
+                <td>0</td>
+                <td>497</td>
+            </tr>
+            <tr>
+                <th scope='row'>Speed</th>
+                <td>-378</td>
+                <td>425</td>
+            </tr>
+            <tr>
+                <th scope='row'>Magnitude</th>
+                <td>0</td>
+                <td>7502</td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+
+</html>
