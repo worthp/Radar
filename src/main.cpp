@@ -49,7 +49,6 @@ void setup() {
     }
     
     Serial.println("wifi/http setup() complete");
-    Serial.flush(); // just cuz i don't trust anything - even what flush does :(
 
     // use alternate rx/tx for KLD7
     Serial.swap();
@@ -58,19 +57,17 @@ void setup() {
     radar.setSerialConnection(&Serial);
     if (radar.init() != KLD7::OK) {
         Serial.swap();
-        Serial.println("radar is ok");
     }
 }
 
 void handleRoot() {
-    radar.getNextFrameData();
 
     server.send(200, "text/json", radar.getStatus());
 }
 
 void loop() {
-    delay(2);
-    //radar.getNextFrameData();
+    delay(5);
+    radar.getNextFrameData();
 
     MDNS.update();
     server.handleClient();

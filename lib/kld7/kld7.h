@@ -40,8 +40,19 @@ public:
         SENSOR_BUSY,
         TIMEOUT        
     };
+    
+    struct tDataEntry{
+        long time;
+        uint16_t distance;
+        int16_t speed;
+        int16_t angle;
+        uint16_t magnitude;
+    } ;
+    
+    int tDataCount = 0;
+    struct tDataEntry tData[1000];
 
-    String status = "";
+    String status;
 
     uint16_t distance;
     int16_t speed;
