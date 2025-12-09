@@ -53,10 +53,6 @@ KLD7::RESPONSE KLD7::getNextFrameData() {
 
     char s[128];
     
-    distance = 0;
-    speed = 0;
-    angle = 0;
-    magnitude = 0;
     char tdat[8];
     radarConnection->readBytes(hdr, sizeof(hdr)); //TODO: sanity check
     
@@ -69,16 +65,19 @@ KLD7::RESPONSE KLD7::getNextFrameData() {
         sprintf(s, "\"%x%x %x%x %x%x %x%x\"]",
                 tdat[0], tdat[1], tdat[2], tdat[3], tdat[4], tdat[5], tdat[6], tdat[7]);
 
+        // metric units. speed,angle,magnitude are scaled x 100
         distance = tdat[1] << 8 | tdat[0];
-        speed = tdat[3] << 8 | tdat[2];
-        angle = tdat[5] << 8 | tdat[4];
-        magnitude = tdat[7] << 8 | tdat[6];
+        speed = (tdat[3] << 8 | tdat[2]);
+        angle = (tdat[5] << 8 | tdat[4]);
+        magnitude = (tdat[7] << 8 | tdat[6]);
         
         addTDATReading(distance, speed, angle, magnitude);
         stats.nonZeroTDATCount += 1;
+        stats.lastNonZeroReadingTime = millis();
     } else {
         // no need to waste space on zeroes
         stats.zeroTDATCount += 1;
+        stats.lastZeroReadingTime = millis();
     }
     
     return OK;
@@ -123,8 +122,8 @@ void KLD7::addTDATReading(uint16_t distance, int16_t speed, int16_t angle, uint1
     stats.maxDistance = max(distance, stats.maxDistance);
     stats.minSpeed = min(speed, stats.minSpeed);
     stats.maxSpeed = max(speed, stats.maxSpeed);
+    stats.minAngle = min(angle, stats.minAngle);
+    stats.maxAngle = max(angle, stats.maxAngle);
     stats.minMagnitude = min(magnitude, stats.minMagnitude);
     stats.maxMagnitude = max(magnitude, stats.maxMagnitude);
-    
-    
 }

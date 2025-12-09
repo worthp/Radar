@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 
 <head>
-    <meta http-equiv='refresh' content='1'>
     <style>
-        html {
-            font-size: large;
-        } ;
+
+    html, body {
+        margin: 0;
+        padding: 0;
+        min-height:200vh;
+        box-sizing: border-box;
+    }
 
         th,
         td {
@@ -31,11 +34,10 @@
         }
 
         table {
+            width: 100%;
             border-collapse: collapse;
             border: 2px solid rgb(140 140 140);
             font-family: sans-serif;
-            font-size: 0.8rem;
-            letter-spacing: 1px;
         }
 
         caption {
@@ -54,18 +56,52 @@
         </tr>
     </table>
     <table>
+        <thead>
+            <tr >
+                <th colspan="3" scope='col'>Activity</th>
+            </tr>
+            <tr>
+                <th width='20%' scope='col'>Data Class</th>
+                <th scope='col'>Count</th>
+                <th scope='col'>Last Time</th>
+            </tr>
+        </thead>
         <tr>
-            <td><b>Zero Count</b></td>
+            <td width="20%"><b>No Target Acquired</b></td>
             <td>2816</td>
+            <td>10 minutes ago</td>
         </tr>
         <tr>
-            <td><b>Non-Zero Count</b></td>
-            <td>1156</td< /tr>
+            <td scope="col" width="20%"><b>Target Acquired</b></td>
+            <td>1156</td>
+            <td>20 minutes ago</td>
+        </tr>
     </table>
+    <br/>
+    <table>
+        <thead>
+            <tr >
+                <th colspan="4" scope='col'>Last Target Reading</th>
+            </tr>
+            <tr>
+                <th scope='col'>Distance</th>
+                <th scope='col'>Speed</th>
+                <th scope='col'>Angle</th>
+                <th scope='col'>Magnitide</th>
+            </tr>
+        </thead>
+        <tr>
+            <td>distance</td>
+            <td>speed</td>
+            <td>angle</td>
+            <td>magnitude</td>
+        </tr>
+    </table>
+    <br/>
     <table>
         <thead>
             <tr>
-                <th scope='col'>Measure</th>
+                <th width='20%' scope='col'>Measure</th>
                 <th scope='col'>Min</th>
                 <th scope='col'>Max</th>
             </tr>
@@ -78,6 +114,11 @@
             </tr>
             <tr>
                 <th scope='row'>Speed</th>
+                <td>-378</td>
+                <td>425</td>
+            </tr>
+            <tr>
+                <th scope='row'>Angle</th>
                 <td>-378</td>
                 <td>425</td>
             </tr>

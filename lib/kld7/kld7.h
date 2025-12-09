@@ -44,20 +44,26 @@ public:
     struct tDataEntry{
         long time;
         uint16_t distance;
-        int16_t speed;
-        int16_t angle;
+        uint16_t speed;
+        uint16_t angle;
         uint16_t magnitude;
     };
     
     struct radarStats {
         uint16_t zeroTDATCount = 0;
         uint16_t nonZeroTDATCount = 0;
+        
+        uint32_t lastNonZeroReadingTime = 0;
+        uint32_t lastZeroReadingTime = 0;
 
         uint16_t minDistance = 0;
         uint16_t maxDistance = 0;
         
-        int16_t minSpeed;
-        int16_t maxSpeed;
+        int16_t minSpeed = 0;
+        int16_t maxSpeed = 0;
+        
+        int16_t minAngle = 0;
+        int16_t maxAngle = 0;
 
         uint16_t minMagnitude = 0;
         uint16_t maxMagnitude = 0;
