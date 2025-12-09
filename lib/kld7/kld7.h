@@ -3,8 +3,10 @@
 #define __KLD7_H
 
 class KLD7 {
-    
+public:
+    int wtf;
     // Radar Parameter 'structure' commands GRPS/SRPS deals with these elements
+    uint8_t srpsBuffer[42];
     char software_version[19]; // STRING,19,Zero-terminated String,K-LD7_APP-RFB-XXXX
     uint8_t base_frequency; // ,UINT8,1,0 = Low, 1 = Middle, 2 = High,1 = Middle
     uint8_t maximum_speed; //UINT8,1,0 = 12.5km/h, 1 = 25km/h, 2 = 50km/h, 3 = 100km/h,1 = 25km/h
@@ -30,7 +32,6 @@ class KLD7 {
     uint8_t micro_detection_sensitivity; // UINT8,1,0-9, 0=Min. sensitivity, 9=Max. sensitvity,4 = Medium sensitivity
                                          
     HardwareSerial *radarConnection;
-public:
     enum RESPONSE {
         OK,
         UKNOWN_COMMAND,
@@ -73,13 +74,15 @@ public:
     int tDataWriteIndex = 0;
     struct tDataEntry tData[10];
     
-    String status;
 
     void setSerialConnection(HardwareSerial *connection);
     
-    void setStatus(String s);
-    void setStatus(const char* s);
-    String getStatus();
+    String logs[10];
+    char logBuffer[256]; // no need to keep stack allocating this
+    int logCount = 0;
+    void addLog(String s);
+    void addLog(const char* s);
+    String getLogs();
     
     // no need to stack allocate on every read
     uint16_t distance;
@@ -93,6 +96,10 @@ public:
 
     RESPONSE init();
     RESPONSE getRadarParameters();
+    RESPONSE setRadarParameters();
     RESPONSE getNextFrameData();
+    RESPONSE waitForResponse();
+
+    void fillSRPSBuffer();
 };
 #endif

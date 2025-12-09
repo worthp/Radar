@@ -8,7 +8,10 @@
 ESP8266WebServer server(80);
 
 void handleRoot();
+void handleRadarSettings();
+void handleUpdateRadarSettings();
 void handleStats();
+void handleLogs();
 
 KLD7 radar;
 Web web;
@@ -49,7 +52,10 @@ void setup() {
 
         server.begin(); // start http server
         server.on("/", handleRoot);
+        server.on("/radarsettings/", handleRadarSettings);
+        server.on("/updateradarsettings/", handleUpdateRadarSettings);
         server.on("/stats/", handleStats);
+        server.on("/logs/", handleLogs);
     }
     
     Serial.println("wifi/http setup() complete");
@@ -65,17 +71,30 @@ void setup() {
 }
 
 void handleRoot() {
-    //server.send(200, "text/json", radar.getStatus());
     server.send(200, "text/html", web.homePage(radar));
+}
+
+void handleRadarSettings() {
+    server.send(200, "text/html", web.radarSettingsPage(radar));
+}
+
+void handleUpdateRadarSettings() {
+    // this needs to be a lot smarter!!!!
+    radar.setRadarParameters();
+    server.send(200, "text/html", web.radarSettingsPage(radar));
 }
 
 void handleStats() {
     server.send(200, "text/html", web.statsPage(radar));
 }
 
+void handleLogs() {
+    server.send(200, "text/html", web.logPage(radar));
+}
+
 void loop() {
     delay(100);
-    radar.getNextFrameData();
+    //radar.getNextFrameData();
 
     MDNS.update();
     server.handleClient();
