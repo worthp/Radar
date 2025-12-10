@@ -17,7 +17,7 @@ void KLD7::setSerialConnection (HardwareSerial *connection) {
 }
 
 KLD7::RESPONSE KLD7::init() {
-    byte buf[] = {'I', 'N', 'I', 'T',
+    byte cmd[] = {'I', 'N', 'I', 'T',
                     0x04, 0x00, 0x00, 0x00,
                     0x00, 0x00, 0x00, 0x00};
     
@@ -33,7 +33,7 @@ KLD7::RESPONSE KLD7::init() {
         }
     }
 
-    radarConnection->write(buf, sizeof(buf));
+    radarConnection->write(cmd, sizeof(cmd));
     r = waitForResponse();
     addLog("KLD7 initialized.");
     getRadarParameters();
@@ -41,15 +41,35 @@ KLD7::RESPONSE KLD7::init() {
     return r;
 }
 
+/**
+ * 
+ */
+KLD7::RESPONSE KLD7::resetFactoryDefaults()
+{
+    byte cmd[] = {'R', 'F', 'S', 'E',
+                    0x00, 0x00, 0x00, 0x00};
+    
+    RESPONSE r;
+
+    radarConnection->write(cmd, sizeof(cmd));
+    r = waitForResponse();
+    if (r == OK) {
+        addLog("Settings reset to factory.");
+        getRadarParameters();
+    }
+
+    return r;
+}
+
 KLD7::RESPONSE KLD7::waitForResponse() {
-    char hdr[8];
     char response[1];
-    radarConnection->readBytes(hdr, sizeof(hdr)); // TODO: do some sanity check
+    radarConnection->readBytes(headerBuffer, sizeof(headerBuffer)); // TODO: do some sanity check
     radarConnection->readBytes(response, sizeof(response));
 
     if ((RESPONSE) response[0] != OK) {
         sprintf(logBuffer, "waitForResponse [%c%c%c%c%x%x%x%x%x]",
-                    hdr[0], hdr[1], hdr[2], hdr[3], hdr[4], hdr[5], hdr[6], hdr[7], response[0]);
+                    headerBuffer[0], headerBuffer[1], headerBuffer[2], headerBuffer[3], headerBuffer[4],
+                    headerBuffer[5], headerBuffer[6], headerBuffer[7], response[0]);
         addLog(logBuffer);
     }
     lastResponseCode = response[0];
@@ -68,9 +88,9 @@ KLD7::RESPONSE KLD7::getRadarParameters() {
     radarConnection->write(buf, sizeof(buf));
 
     r = waitForResponse();
-    char hdr[8];
+    char headerBuffer[8];
     
-    radarConnection->readBytes(hdr, sizeof(hdr)); //TODO: sanity check
+    radarConnection->readBytes(headerBuffer, sizeof(headerBuffer)); //TODO: sanity check
     
     radarConnection->readBytes(srpsBuffer, sizeof(srpsBuffer)); //TODO: sanity check
     //logSRPSBuffer();
@@ -159,26 +179,30 @@ KLD7::RESPONSE KLD7::updateRadarParameter(String name, String value) {
         srpsBuffer[40] = (uint8_t)atoi(value.c_str());
     } else if (name == "micro_detection_sensitivity") {//} = (uint8_t)srpsBuffer[41];
         srpsBuffer[41] = (uint8_t)atoi(value.c_str());
-    } else {
+    } else if (name != "all") {
         sprintf(logBuffer, "parameter name [%s] not recognized.", name.c_str());
         addLog(logBuffer);
         return KLD7::INVALID_PARAMETER_VALUE;
     }
 
     // send the changes
-    r = setRadarParameters();
+    if (name == "all") {
+        r = resetFactoryDefaults();
+    } else {
+        r = setRadarParameters();
+    }
+
     getRadarParameters(); // just to make sure we are in sync
     return r;
 }
 
 KLD7::RESPONSE KLD7::setRadarParameters() {
     RESPONSE r;
-    byte hdr[] = {'S', 'R', 'P', 'S', 0x2A, 0x00, 0x00, 0x00};
+    byte cmd[] = {'S', 'R', 'P', 'S', 0x2A, 0x00, 0x00, 0x00};
     uint8_t sendBuffer[50];
     
-
-    memcpy(sendBuffer, hdr, sizeof(hdr));
-    memcpy(&sendBuffer[sizeof(hdr)], srpsBuffer, sizeof(srpsBuffer));
+    memcpy(sendBuffer, cmd, sizeof(cmd));
+    memcpy(&sendBuffer[sizeof(cmd)], srpsBuffer, sizeof(srpsBuffer));
     
     radarConnection->write(sendBuffer, sizeof(sendBuffer));
     
@@ -194,29 +218,30 @@ KLD7::RESPONSE KLD7::setRadarParameters() {
 
 KLD7::RESPONSE KLD7::getNextFrameData() {
     RESPONSE r;
-    byte buf[] = {'G', 'N', 'F', 'D',
+    byte cmd[] = {'G', 'N', 'F', 'D',
                     0x04, 0x00, 0x00, 0x00,
                     0x08, 0x00, 0x00, 0x00};
-    radarConnection->write(buf, sizeof(buf));
+    radarConnection->write(cmd, sizeof(cmd));
 
     r = waitForResponse();
-    char hdr[8];
-    char tdat[8];
-    char s[128];
     
-    radarConnection->readBytes(hdr, sizeof(hdr)); //TODO: sanity check
+    radarConnection->readBytes(headerBuffer, sizeof(headerBuffer)); //TODO: sanity check
 
-    if (hdr[4] > 0) { // target data
-        radarConnection->readBytes(tdat, sizeof(tdat));
-        sprintf(s, "TDAT data [%x%x%x%x%x%x%x%x]",
-                tdat[0], tdat[1], tdat[2], tdat[3], tdat[4], tdat[5], tdat[6], tdat[7]);
-        addLog(s);
+    if (headerBuffer[4] > 0) { // target data
+        radarConnection->readBytes(tdatBuffer, sizeof(tdatBuffer));
+        sprintf(formattingBuffer, "TDAT data [%x%x%x%x%x%x%x%x]",
+                tdatBuffer[0], tdatBuffer[1], tdatBuffer[2], tdatBuffer[3], tdatBuffer[4], tdatBuffer[5], tdatBuffer[6], tdatBuffer[7]);
+        addLog(formattingBuffer);
 
         // metric units. speed,angle,magnitude are scaled x 100
-        distance = tdat[1] << 8 | tdat[0];
-        speed = (tdat[3] << 8 | tdat[2]);
-        angle = (tdat[5] << 8 | tdat[4]);
-        magnitude = (tdat[7] << 8 | tdat[6]);
+        distance = tdatBuffer[1] << 8 | tdatBuffer[0];
+        speed = (tdatBuffer[3] << 8 | tdatBuffer[2]);
+        angle = (tdatBuffer[5] << 8 | tdatBuffer[4]);
+        magnitude = (tdatBuffer[7] << 8 | tdatBuffer[6]);
+        
+        f_speed = speed / 100.0;
+        f_angle = angle / 100.0;
+        f_magnitude = magnitude / 100.0;
         
         addTDATReading(distance, speed, angle, magnitude);
         stats.nonZeroTDATCount += 1;
@@ -282,10 +307,10 @@ void KLD7::addTDATReading(uint16_t distance, int16_t speed, int16_t angle, uint1
     
     stats.minDistance = min(distance, stats.minDistance);
     stats.maxDistance = max(distance, stats.maxDistance);
-    stats.minSpeed = min(speed, stats.minSpeed);
-    stats.maxSpeed = max(speed, stats.maxSpeed);
-    stats.minAngle = min(angle, stats.minAngle);
-    stats.maxAngle = max(angle, stats.maxAngle);
-    stats.minMagnitude = min(magnitude, stats.minMagnitude);
-    stats.maxMagnitude = max(magnitude, stats.maxMagnitude);
+    stats.minSpeed = min(f_speed, stats.minSpeed);
+    stats.maxSpeed = max(f_speed, stats.maxSpeed);
+    stats.minAngle = min(f_angle, stats.minAngle);
+    stats.maxAngle = max(f_angle, stats.maxAngle);
+    stats.minMagnitude = min(f_magnitude, stats.minMagnitude);
+    stats.maxMagnitude = max(f_magnitude, stats.maxMagnitude);
 }

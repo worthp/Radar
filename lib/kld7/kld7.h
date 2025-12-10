@@ -6,8 +6,15 @@ class KLD7 {
 public:
     KLD7();
 
+    // random reusable variables that don't need to be stack allocated for each call
+    // 
+    char formattingBuffer[1024];
+    uint8_t headerBuffer[8];
+
     // Radar Parameter 'structure' commands GRPS/SRPS deals with these elements
     uint8_t srpsBuffer[42];
+    uint8_t tdatBuffer[8];
+
     char software_version[19]; // STRING,19,Zero-terminated String,K-LD7_APP-RFB-XXXX
     uint8_t base_frequency; // ,UINT8,1,0 = Low, 1 = Middle, 2 = High,1 = Middle
     uint8_t maximum_speed; //UINT8,1,0 = 12.5km/h, 1 = 25km/h, 2 = 50km/h, 3 = 100km/h,1 = 25km/h
@@ -64,14 +71,14 @@ public:
         uint16_t minDistance = 0;
         uint16_t maxDistance = 0;
         
-        int16_t minSpeed = 0;
-        int16_t maxSpeed = 0;
+        float minSpeed = 0.0;
+        float maxSpeed = 0.0;
         
-        int16_t minAngle = 0;
-        int16_t maxAngle = 0;
+        float minAngle = 0.0;
+        float maxAngle = 0.0;
 
-        uint16_t minMagnitude = 0;
-        uint16_t maxMagnitude = 0;
+        float minMagnitude = 0.0;
+        float maxMagnitude = 0.0;
     };
     radarStats stats;
     
@@ -91,14 +98,19 @@ public:
     // no need to stack allocate on every read
     uint16_t distance;
     int16_t speed;
+    float f_speed;
     int16_t angle;
+    float f_angle;
     uint16_t magnitude;
+    float f_magnitude;
+
     void addTDATReading(uint16_t distance,
                         int16_t speed,
                         int16_t angle,
                         uint16_t magnitude);
 
     RESPONSE init();
+    RESPONSE resetFactoryDefaults();
     RESPONSE getRadarParameters();
     RESPONSE setRadarParameters();
     RESPONSE getNextFrameData();
