@@ -10,7 +10,7 @@ public:
     ~Web() {};
     
     String homePage(KLD7 radar);
-    String radarSettingsPage(KLD7 radar);
+    String radarSettingsPage(KLD7 radar, char msg[]);
     void updateRadarParameters(KLD7 radar);
     String statsPage(KLD7 radar);
     String logPage(KLD7 radar);

@@ -1,6 +1,7 @@
 #include <WiFiManager.h> // https://github.com/tzapu/WiFiManager
 #include <ESP8266mDNS.h>
 #include <ESP8266WebServer.h>
+#include <uri/UriBraces.h>
 
 #include <kld7.h>
 #include <web.h>
@@ -53,7 +54,7 @@ void setup() {
         server.begin(); // start http server
         server.on("/", handleRoot);
         server.on("/radarsettings/", handleRadarSettings);
-        server.on("/updateradarsettings/", handleUpdateRadarSettings);
+        server.on(UriBraces("/updateradarsettings/{}/{}"), handleUpdateRadarSettings);
         server.on("/stats/", handleStats);
         server.on("/logs/", handleLogs);
     }
@@ -75,13 +76,23 @@ void handleRoot() {
 }
 
 void handleRadarSettings() {
-    server.send(200, "text/html", web.radarSettingsPage(radar));
+    char msg[] {0};
+    server.send(200, "text/html", web.radarSettingsPage(radar, msg));
 }
 
 void handleUpdateRadarSettings() {
+    char b[128];
     // this needs to be a lot smarter!!!!
-    radar.setRadarParameters();
-    server.send(200, "text/html", web.radarSettingsPage(radar));
+    //radar.setRadarParameters();
+    String var = server.pathArg(0);
+    String val = server.pathArg(1);
+    KLD7::RESPONSE r;
+
+    if ((r = radar.updateRadarParameter(var, val)) != KLD7::OK) {
+        sprintf(b, "Failed to update [%s] to val[%s] [%s]\n", var.c_str(), val.c_str(), radar.responseText[r].c_str());
+    }
+
+    server.send(200, "text/html", web.radarSettingsPage(radar, b));
 }
 
 void handleStats() {
@@ -94,7 +105,7 @@ void handleLogs() {
 
 void loop() {
     delay(100);
-    //radar.getNextFrameData();
+    radar.getNextFrameData();
 
     MDNS.update();
     server.handleClient();

@@ -4,7 +4,8 @@
 
 class KLD7 {
 public:
-    int wtf;
+    KLD7();
+
     // Radar Parameter 'structure' commands GRPS/SRPS deals with these elements
     uint8_t srpsBuffer[42];
     char software_version[19]; // STRING,19,Zero-terminated String,K-LD7_APP-RFB-XXXX
@@ -41,6 +42,9 @@ public:
         SENSOR_BUSY,
         TIMEOUT        
     };
+
+    uint8_t lastResponseCode;
+    String responseText[7];
     
     struct tDataEntry{
         long time;
@@ -77,7 +81,7 @@ public:
 
     void setSerialConnection(HardwareSerial *connection);
     
-    String logs[10];
+    String logs[20];
     char logBuffer[256]; // no need to keep stack allocating this
     int logCount = 0;
     void addLog(String s);
@@ -98,8 +102,9 @@ public:
     RESPONSE getRadarParameters();
     RESPONSE setRadarParameters();
     RESPONSE getNextFrameData();
+    void logSRPSBuffer();
     RESPONSE waitForResponse();
 
-    void fillSRPSBuffer();
+    RESPONSE updateRadarParameter(String name, String value);
 };
 #endif
