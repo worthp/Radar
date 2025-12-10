@@ -96,6 +96,7 @@ String Web::logPage(KLD7 radar) {
 
     /** Logs  */
     p.concat(htmlHead(3600));
+    p.concat("<body>");
     p.concat(menu());
 
     p.concat("<br/><table>");
@@ -118,13 +119,17 @@ String Web::logPage(KLD7 radar) {
 
 String Web::menu()
 {
-    String s;
-    s.concat("<table><tr>");
-    s.concat("<td><a href='/'>Home</a></td>");
-    s.concat("<td><a href='/radarsettings/'>Radar Settings</a></td>");
-    s.concat("<td><a href='/stats/'>Stats</a></td>");
-    s.concat("<td><a href='/logs/'>Logs</a></td>");
-    s.concat("</tr></table>");
+    String s("");
+    s.concat("<table>");
+    /*
+    s.concat("<thead><tr>");
+    s.concat("<th scope='col'><a href='/'>Home</a></th>");
+    s.concat("<th scope='col'><a href='/radarsettings/'>Radar Settings</a></th>");
+    s.concat("<th scope='col'><a href='/stats/'>Stats</a></th>");
+    s.concat("<th scope='col'><a href='/logs/'>Logs</a></th>");
+    s.concat("</tr></thead>");
+    */
+    s.concat("/table>");
 
     return s;
 }
