@@ -14,6 +14,7 @@ public:
     // Radar Parameter 'structure' commands GRPS/SRPS deals with these elements
     uint8_t srpsBuffer[42];
     uint8_t tdatBuffer[8];
+    uint8_t ddatBuffer[6];
 
     char software_version[19]; // STRING,19,Zero-terminated String,K-LD7_APP-RFB-XXXX
     uint8_t base_frequency; // ,UINT8,1,0 = Low, 1 = Middle, 2 = High,1 = Middle
@@ -53,12 +54,23 @@ public:
     uint8_t lastResponseCode;
     String responseText[7];
     
-    struct tDataEntry{
-        long time;
+    struct TDAT{
         uint16_t distance;
-        uint16_t speed;
-        uint16_t angle;
+        int16_t speed;
+        int16_t angle;
         uint16_t magnitude;
+        float f_speed;
+        float f_angle;
+        float f_magnitude;
+    };
+    
+    struct DDAT { 
+        uint8_t detection;
+        uint8_t microDetection;
+        uint8_t angleDetected;
+        uint8_t directionDetected;
+        uint8_t rangeDetected;
+        uint8_t speedDetected;
     };
     
     struct radarStats {
@@ -84,26 +96,30 @@ public:
     radarStats stats;
     
     int tDataWriteIndex = 0;
-    struct tDataEntry tData[10];
+    struct TDAT tData[10];
+    struct TDAT lastReadTDAT;
+    struct TDAT lastDetectedTDAT;
+    struct DDAT ddat;
     
-
     void setSerialConnection(HardwareSerial *connection);
     
-    String logs[20];
-    char logBuffer[256]; // no need to keep stack allocating this
+    boolean logging = true;
     int logCount = 0;
+    static const int logSize = 64;
+    char msgLogs[20][32];
+
+    char logBuffer[256]; // no need to keep stack allocating this
     void addLog(String s);
     void addLog(const char* s);
     String getLogs();
     
     // no need to stack allocate on every read
+    /* moved these to tdat 
     uint16_t distance;
     int16_t speed;
-    float f_speed;
     int16_t angle;
-    float f_angle;
     uint16_t magnitude;
-    float f_magnitude;
+    */
 
     void addTDATReading(uint16_t distance,
                         int16_t speed,

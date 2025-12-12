@@ -1,6 +1,7 @@
 #include <WiFiManager.h> // https://github.com/tzapu/WiFiManager
 #include <ESP8266mDNS.h>
 #include <ESP8266WebServer.h>
+#include <Esp.h>
 #include <uri/UriBraces.h>
 
 #include <kld7.h>
@@ -13,6 +14,7 @@ void handleRadarSettings();
 void handleUpdateRadarSettings();
 void handleStats();
 void handleLogs();
+void handleReboot();
 
 KLD7 radar;
 Web web;
@@ -57,6 +59,7 @@ void setup() {
         server.on(UriBraces("/updateradarsettings/{}/{}"), handleUpdateRadarSettings);
         server.on("/stats/", handleStats);
         server.on("/logs/", handleLogs);
+        server.on("/reboot/", handleReboot);
     }
     
     Serial.println("wifi/http setup() complete");
@@ -73,6 +76,10 @@ void setup() {
 
 void handleRoot() {
     server.send(200, "text/html", web.homePage(radar));
+}
+void handleReboot() {
+    ESP.restart();
+    server.send(200, "text/html", web.logPage(radar));
 }
 
 void handleRadarSettings() {

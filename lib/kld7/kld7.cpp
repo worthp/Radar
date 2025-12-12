@@ -219,40 +219,80 @@ KLD7::RESPONSE KLD7::setRadarParameters() {
 
 KLD7::RESPONSE KLD7::getNextFrameData() {
     RESPONSE r;
+    uint8_t mask = 0x08 | 0x10; // TDAT (0x08) and DDAT(0x10)
     byte cmd[] = {'G', 'N', 'F', 'D',
                     0x04, 0x00, 0x00, 0x00,
-                    0x08, 0x00, 0x00, 0x00};
+                    mask, 0x00, 0x00, 0x00}; 
     radarConnection->write(cmd, sizeof(cmd));
 
     r = waitForResponse();
+    if (r != OK) return r;
     
-    radarConnection->readBytes(headerBuffer, sizeof(headerBuffer)); //TODO: sanity check
+    for (int i = 0; i < 2; i++) {
+        radarConnection->readBytes(headerBuffer, sizeof(headerBuffer)); //TODO: sanity check
 
-    if (headerBuffer[4] > 0) { // target data
-        radarConnection->readBytes(tdatBuffer, sizeof(tdatBuffer));
         /*
-        sprintf(formattingBuffer, "TDAT data [%x%x%x%x%x%x%x%x]",
-                tdatBuffer[0], tdatBuffer[1], tdatBuffer[2], tdatBuffer[3], tdatBuffer[4], tdatBuffer[5], tdatBuffer[6], tdatBuffer[7]);
-        addLog(formattingBuffer);
+        sprintf(formattingBuffer, "header data [%02x%02x%02x%02x%02x%02x%02x%02x]",
+                headerBuffer[0], headerBuffer[1], headerBuffer[2], headerBuffer[3], headerBuffer[4],
+                headerBuffer[5], headerBuffer[6], headerBuffer[7]);
         */
 
-        // metric units. speed,angle,magnitude are scaled x 100
-        distance = tdatBuffer[1] << 8 | tdatBuffer[0];
-        speed = (tdatBuffer[3] << 8 | tdatBuffer[2]);
-        angle = (tdatBuffer[5] << 8 | tdatBuffer[4]);
-        magnitude = (tdatBuffer[7] << 8 | tdatBuffer[6]);
-        
-        f_speed = speed / 100.0;
-        f_angle = angle / 100.0;
-        f_magnitude = magnitude / 100.0;
-        
-        addTDATReading(distance, speed, angle, magnitude);
-        stats.nonZeroTDATCount += 1;
-        stats.lastNonZeroReadingTime = millis();
-    } else {
-        // no need to waste space on zeroes
-        stats.zeroTDATCount += 1;
-        stats.lastZeroReadingTime = millis();
+        if (headerBuffer[0] == 'T' && headerBuffer[1] == 'D' && headerBuffer[2] == 'A' && headerBuffer[3] == 'T') {
+            if (headerBuffer[4] > 0) { // target data
+                radarConnection->readBytes(tdatBuffer, sizeof(tdatBuffer));
+                /*
+                sprintf(formattingBuffer, "TDAT data [%x%x%x%x%x%x%x%x]",
+                        tdatBuffer[0], tdatBuffer[1], tdatBuffer[2], tdatBuffer[3], tdatBuffer[4], tdatBuffer[5], tdatBuffer[6], tdatBuffer[7]);
+                addLog(formattingBuffer);
+                */
+
+                // metric units. speed,angle,magnitude are scaled x 100
+                lastReadTDAT.distance = tdatBuffer[1] << 8 | tdatBuffer[0];
+                lastReadTDAT.speed = (tdatBuffer[3] << 8 | tdatBuffer[2]);
+                lastReadTDAT.angle = (tdatBuffer[5] << 8 | tdatBuffer[4]);
+                lastReadTDAT.magnitude = (tdatBuffer[7] << 8 | tdatBuffer[6]);
+                
+                lastReadTDAT.f_speed = lastReadTDAT.speed / 100.0;
+                lastReadTDAT.f_angle = lastReadTDAT.angle / 100.0;
+                lastReadTDAT.f_magnitude = lastReadTDAT.magnitude / 100.0;
+                
+                addTDATReading(lastReadTDAT.distance, lastReadTDAT.speed, lastReadTDAT.angle, lastReadTDAT.magnitude);
+                stats.nonZeroTDATCount += 1;
+                stats.lastNonZeroReadingTime = millis();
+            } else {
+                // no need to waste space on zeroes
+                stats.zeroTDATCount += 1;
+                stats.lastZeroReadingTime = millis();
+            }
+        } else if ((headerBuffer[0] == 'D' && headerBuffer[1] == 'D' && headerBuffer[2] == 'A' && headerBuffer[3] == 'T')
+             && (headerBuffer[4] > 0)) { // ddat data
+            
+            radarConnection->readBytes(ddatBuffer, sizeof(ddatBuffer));
+
+            ddat.detection = ddatBuffer[0];
+
+            if (ddat.detection != 0) {
+                ddat.microDetection = ddatBuffer[1];
+                ddat.angleDetected = ddatBuffer[2];
+                ddat.directionDetected = ddatBuffer[3];
+                ddat.rangeDetected = ddatBuffer[4];
+                ddat.speedDetected = ddatBuffer[5];
+
+                lastDetectedTDAT.distance = lastReadTDAT.distance;
+                lastDetectedTDAT.speed = lastReadTDAT.speed;
+                lastDetectedTDAT.angle = lastReadTDAT.angle;
+                lastDetectedTDAT.magnitude = lastReadTDAT.magnitude;
+                
+                lastDetectedTDAT.f_speed = lastReadTDAT.speed / 100.0;
+                lastDetectedTDAT.f_angle = lastReadTDAT.angle / 100.0;
+                lastDetectedTDAT.f_magnitude = lastReadTDAT.magnitude / 100.0;
+            }
+            /*
+            sprintf(formattingBuffer, "DDAT data [%x%x%x%x%x%x]",
+                    ddatBuffer[0], ddatBuffer[1], ddatBuffer[2], ddatBuffer[3], ddatBuffer[4], ddatBuffer[5]);
+            addLog(formattingBuffer);
+            */
+         }
     }
     
     return r;
@@ -278,31 +318,25 @@ void KLD7::addLog(String s) {
 }
 
 void KLD7::addLog(const char* s) {
-    if (logCount == 20) {
+    if (!logging) return;
+    
+    if (logCount == logSize) {
         logCount = 0;
     }
-    logs[logCount] = s;
+    strncpy(msgLogs[logCount], s, sizeof(msgLogs[0]));
+    msgLogs[logCount][sizeof(msgLogs[0])-1] = 0; // make sure it is null terminated
     logCount += 1;
 }
 
-String KLD7::getLogs() {
-    String s ;
-    for (int i = 0; i < logCount; i++) {
-        s.concat(logs[i]);
-        s.concat("\n");
-    }
-    
-    logCount = 0; // not sure if this is good.
-    return s;
-}
-
+/**
+ * 
+ */
 void KLD7::addTDATReading(uint16_t distance, int16_t speed, int16_t angle, uint16_t magnitude)
 {
     if (tDataWriteIndex == sizeof(tData)) {
         tDataWriteIndex = 0;
     }
     
-    tData[tDataWriteIndex].time = millis();
     tData[tDataWriteIndex].distance = distance;
     tData[tDataWriteIndex].speed = speed;
     tData[tDataWriteIndex].angle = angle;
@@ -310,10 +344,10 @@ void KLD7::addTDATReading(uint16_t distance, int16_t speed, int16_t angle, uint1
     
     stats.minDistance = min(distance, stats.minDistance);
     stats.maxDistance = max(distance, stats.maxDistance);
-    stats.minSpeed = min(f_speed, stats.minSpeed);
-    stats.maxSpeed = max(f_speed, stats.maxSpeed);
-    stats.minAngle = min(f_angle, stats.minAngle);
-    stats.maxAngle = max(f_angle, stats.maxAngle);
-    stats.minMagnitude = min(f_magnitude, stats.minMagnitude);
-    stats.maxMagnitude = max(f_magnitude, stats.maxMagnitude);
+    stats.minSpeed = min(lastDetectedTDAT.f_speed, stats.minSpeed);
+    stats.maxSpeed = max(lastDetectedTDAT.f_speed, stats.maxSpeed);
+    stats.minAngle = min(lastDetectedTDAT.f_angle, stats.minAngle);
+    stats.maxAngle = max(lastDetectedTDAT.f_angle, stats.maxAngle);
+    stats.minMagnitude = min(lastDetectedTDAT.f_magnitude, stats.minMagnitude);
+    stats.maxMagnitude = max(lastDetectedTDAT.f_magnitude, stats.maxMagnitude);
 }

@@ -19,7 +19,7 @@ String Web::statsPage(KLD7 radar) {
     
     unsigned long now = millis();
 
-    p.concat(htmlHead(5));
+    p.concat(htmlHead(3));
     p.concat("<body>");
     p.concat(menu());
 
@@ -48,10 +48,42 @@ String Web::statsPage(KLD7 radar) {
     p.concat(formattingBuffer);
     
     p.concat("</tbody>");
+    p.concat("</table>");
 
+    /** Last Detection Reading */
+    p.concat("<br/><table>");
+    p.concat("<thead>");
+    p.concat("<tr><th colspan='9' scope='col'>Last Detection</th></tr>");
+    p.concat("<tr><th scope='col'>Micro Detection</th>\
+            <th scope='col'>Angle</th>\
+            <th scope='col'>Direction</th>\
+            <th scope='col'>Range</th>\
+            <th scope='col'>Speed</th>\
+            <th scope='col'>Distance (cm)</th>\
+            <th scope='col'>Speed (km/h)</th>\
+            <th scope='col'>Angle (deg)</th>\
+            <th scope='col'>Magnitude (dB)</th></tr>");
+    p.concat("</thead>");
+    p.concat("<tbody>");
+    
+    sprintf(formattingBuffer, "<tr><td>%d</td><td>%d</td><td>%d</td><td>%d</td>\
+                    <td>%d</td><td>%d</td><td>%2.2f</td><td>%02.2f</td><td>%02.2f</td></tr>",
+                    radar.ddat.microDetection,
+                    radar.ddat.angleDetected,
+                    radar.ddat.directionDetected,
+                    radar.ddat.rangeDetected,
+                    radar.ddat.speedDetected,
+                    radar.lastDetectedTDAT.distance,
+                    radar.lastDetectedTDAT.f_speed,
+                    radar.lastDetectedTDAT.f_angle,
+                    radar.lastDetectedTDAT.f_magnitude);
+    p.concat(formattingBuffer);
+    
+    p.concat("</tbody>");
     p.concat("</table>");
     
     /** Last Target Reading */
+    /*
     p.concat("<br/><table>");
     p.concat("<thead>");
     p.concat("<tr><th colspan='4' scope='col'>Last Target Reading</th></tr>");
@@ -60,14 +92,15 @@ String Web::statsPage(KLD7 radar) {
     p.concat("<tbody>");
     
     sprintf(formattingBuffer, "<tr><td>%d</td><td>%2.2f</td><td>%2.2f</td><td>%2.2f</td></tr>",
-                    radar.distance, radar.f_speed, radar.f_angle, radar.f_magnitude);
+                    radar.lastReadTDAT.distance, radar.lastReadTDAT.f_speed, radar.lastReadTDAT.f_angle, radar.lastReadTDAT.f_magnitude);
     p.concat(formattingBuffer);
     
     p.concat("</tbody>");
     p.concat("</table>");
+    */
     
     /** min max stats */
-    p.concat("<br/><table>");
+    /*
     p.concat("<thead>");
     p.concat("<tr><th colspan='3' scope='col'>Measurement History</th></tr>");
     p.concat("<tr><th width='20%' scope='col'>Measure</th><th scope='col'>Min</th><th scope='col'>Max</th></tr>");
@@ -92,6 +125,7 @@ String Web::statsPage(KLD7 radar) {
 
     p.concat("</tbody>");
     p.concat("</table>");
+    */
 
     p.concat("</body></html>");
     return p;
@@ -113,15 +147,17 @@ String Web::logPage(KLD7 radar) {
     p.concat("</thead>");
 
     p.concat("<tbody>");
-
     p.concat("<tr><td text-align='left'><pre>");
-    p.concat(radar.getLogs());
+
+    for (int i = 0; i < radar.logCount; i++) {
+        p.concat(radar.msgLogs[i]);
+    }
     p.concat("</pre></td></tr>");
 
     p.concat("</tbody>");
     p.concat("</table>");
     p.concat("</body></html>");
-    
+    p.concat("<a href='/reboot/'>Reboot</a>");
     return p;
 }
 
@@ -235,11 +271,29 @@ String Web::radarSettingsPage(KLD7 radar, char msg[]) {
         </td></tr>", radar.maximum_detection_distance);  p.concat(formattingBuffer);
     //uint8_t maximum_detection_distance; //UINT8,1,0 – 100% of range setting,50%
     sprintf(formattingBuffer, "<tr><th scope='row'>minimum_detection_angle</th><td>%d</td>\
-        <td>None\
+        <td>\
+            <a href='/updateradarsettings/minimum_detection_angle/-90'>-90</a>\
+            <a href='/updateradarsettings/minimum_detection_angle/-60'>-60</a>\
+            <a href='/updateradarsettings/minimum_detection_angle/-45'>-45</a>\
+            <a href='/updateradarsettings/minimum_detection_angle/-30'>-30</a>\
+            <a href='/updateradarsettings/minimum_detection_angle/0'>0</a>\
+            <a href='/updateradarsettings/minimum_detection_angle/90'>30</a>\
+            <a href='/updateradarsettings/minimum_detection_angle/60'>60</a>\
+            <a href='/updateradarsettings/minimum_detection_angle/45'>45</a>\
+            <a href='/updateradarsettings/minimum_detection_angle/30'>90</a>\
         </td></tr>", radar.minimum_detection_angle);  p.concat(formattingBuffer);
     //int8_t minimum_detection_angle; //INT8,1,-90° to +90°,-90°
     sprintf(formattingBuffer, "<tr><th scope='row'>maximum_detection_angle</th><td>%d</td>\
-        <td>None\
+        <td>\
+            <a href='/updateradarsettings/maximum_detection_angle/-90'>-90</a>\
+            <a href='/updateradarsettings/maximum_detection_angle/-60'>-60</a>\
+            <a href='/updateradarsettings/maximum_detection_angle/-45'>-45</a>\
+            <a href='/updateradarsettings/maximum_detection_angle/-30'>-30</a>\
+            <a href='/updateradarsettings/maximum_detection_angle/0'>0</a>\
+            <a href='/updateradarsettings/maximum_detection_angle/90'>30</a>\
+            <a href='/updateradarsettings/maximum_detection_angle/60'>60</a>\
+            <a href='/updateradarsettings/maximum_detection_angle/45'>45</a>\
+            <a href='/updateradarsettings/maximum_detection_angle/30'>90</a>\
         </td></tr>", radar.maximum_detection_angle);  p.concat(formattingBuffer);
     //int8_t maximum_detection_angle; // INT8,1,-90° to +90°,+90°
     sprintf(formattingBuffer, "<tr><th scope='row'>minimum_detection_speed(%% of max speed)</th><td>%d</td>\
@@ -284,7 +338,16 @@ String Web::radarSettingsPage(KLD7 radar, char msg[]) {
         </td></tr>", radar.range_threshold);  p.concat(formattingBuffer);
     //uint8_t range_threshold; // UINT8,1,0 – 100% of range setting,10%
     sprintf(formattingBuffer, "<tr><th scope='row'>angle_threshold</th><td>%d</td>\
-        <td>None\
+        <td>\
+            <a href='/updateradarsettings/angle_threshold/-90'>-90</a>\
+            <a href='/updateradarsettings/angle_threshold/-60'>-60</a>\
+            <a href='/updateradarsettings/angle_threshold/-45'>-45</a>\
+            <a href='/updateradarsettings/angle_threshold/-30'>-30</a>\
+            <a href='/updateradarsettings/angle_threshold/0'>0</a>\
+            <a href='/updateradarsettings/angle_threshold/90'>30</a>\
+            <a href='/updateradarsettings/angle_threshold/60'>60</a>\
+            <a href='/updateradarsettings/angle_threshold/45'>45</a>\
+            <a href='/updateradarsettings/angle_threshold/30'>90</a>\
         </td></tr>", radar.angle_threshold);  p.concat(formattingBuffer);
     //uint8_t angle_threshold; // INT8,1,-90° to +90°,0°
     sprintf(formattingBuffer, "<tr><th scope='row'>speed_threshold</th><td>%d</td>\
