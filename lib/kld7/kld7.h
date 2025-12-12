@@ -62,6 +62,7 @@ public:
     };
     
     struct radarStats {
+        uint32_t startedOn;
         uint16_t zeroTDATCount = 0;
         uint16_t nonZeroTDATCount = 0;
         

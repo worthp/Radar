@@ -6,7 +6,7 @@
 
 class Web {
 public:
-    Web(){};
+    Web();
     ~Web() {};
     
     String homePage(KLD7 radar);

@@ -1,5 +1,9 @@
 #include "web.h"
 
+Web::Web() {
+    memset(formattingBuffer, 0, sizeof(formattingBuffer));
+}
+
 String Web::homePage(KLD7 radar) {
     String p ;
     p.concat(htmlHead(3600));
@@ -15,7 +19,7 @@ String Web::statsPage(KLD7 radar) {
     
     unsigned long now = millis();
 
-    p.concat(htmlHead(3));
+    p.concat(htmlHead(5));
     p.concat("<body>");
     p.concat(menu());
 
@@ -27,6 +31,11 @@ String Web::statsPage(KLD7 radar) {
     p.concat("</thead>");
 
     p.concat("<tbody>");
+
+    unsigned long seconds = (now - radar.stats.startedOn) / 1000;
+    sprintf(formattingBuffer, "<tr><th scope='row'>Uptime</th><td colspan='2'>%02lu:%02lu:%02lu</td></tr>",
+                (unsigned long)seconds/3600, (unsigned long)(seconds/60)%60, (unsigned long)seconds%60);
+    p.concat(formattingBuffer);
 
     sprintf(formattingBuffer, "<tr><th scope='row'>No Target Acquired</th><td>%d</td><td>%lu secs ago</td></tr>",
                     radar.stats.zeroTDATCount,
@@ -77,7 +86,7 @@ String Web::statsPage(KLD7 radar) {
                     radar.stats.minAngle, radar.stats.maxAngle);
     p.concat(formattingBuffer);
     
-    sprintf(formattingBuffer, "<tr><th scope='row'>Magnitude</th><td>%2.2f</td><td>%2.2f</td></tr>",
+    sprintf(formattingBuffer, "<tr><th scope='row'>Magnitude (dB)</th><td>%2.2f</td><td>%2.2f</td></tr>",
                     radar.stats.minMagnitude, radar.stats.maxMagnitude);
     p.concat(formattingBuffer);
 

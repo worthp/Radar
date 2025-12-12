@@ -33,6 +33,7 @@ KLD7::RESPONSE KLD7::init() {
         }
     }
 
+    stats.startedOn = millis();
     radarConnection->write(cmd, sizeof(cmd));
     r = waitForResponse();
     addLog("KLD7 initialized.");
@@ -229,9 +230,11 @@ KLD7::RESPONSE KLD7::getNextFrameData() {
 
     if (headerBuffer[4] > 0) { // target data
         radarConnection->readBytes(tdatBuffer, sizeof(tdatBuffer));
+        /*
         sprintf(formattingBuffer, "TDAT data [%x%x%x%x%x%x%x%x]",
                 tdatBuffer[0], tdatBuffer[1], tdatBuffer[2], tdatBuffer[3], tdatBuffer[4], tdatBuffer[5], tdatBuffer[6], tdatBuffer[7]);
         addLog(formattingBuffer);
+        */
 
         // metric units. speed,angle,magnitude are scaled x 100
         distance = tdatBuffer[1] << 8 | tdatBuffer[0];
