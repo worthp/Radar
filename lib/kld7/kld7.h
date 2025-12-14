@@ -113,14 +113,6 @@ public:
     void addLog(const char* s);
     String getLogs();
     
-    // no need to stack allocate on every read
-    /* moved these to tdat 
-    uint16_t distance;
-    int16_t speed;
-    int16_t angle;
-    uint16_t magnitude;
-    */
-
     void addTDATReading(uint16_t distance,
                         int16_t speed,
                         int16_t angle,

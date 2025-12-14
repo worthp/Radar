@@ -111,7 +111,7 @@ void handleLogs() {
 }
 
 void loop() {
-    delay(100);
+    delay(500);
     radar.getNextFrameData();
 
     MDNS.update();
