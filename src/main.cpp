@@ -65,12 +65,15 @@ void setup() {
     Serial.println("wifi/http setup() complete");
 
     // use alternate rx/tx for KLD7
+    Serial.flush();
     Serial.swap();
     
     // tell radar which serial port to use
     radar.setSerialConnection(&Serial);
     if (radar.init() != KLD7::OK) {
+        Serial.flush();
         Serial.swap();
+        Serial.println("KLD7 failed to init()");
     }
 }
 
@@ -112,7 +115,11 @@ void handleLogs() {
 
 void loop() {
     delay(500);
-    radar.getNextFrameData();
+    if (radar.inited) {
+        radar.getNextFrameData();
+    } else {
+        Serial.println("KLD7 is not initialized.");
+    }
 
     MDNS.update();
     server.handleClient();

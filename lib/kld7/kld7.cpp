@@ -33,11 +33,16 @@ KLD7::RESPONSE KLD7::init() {
         }
     }
 
-    stats.startedOn = millis();
     radarConnection->write(cmd, sizeof(cmd));
     r = waitForResponse();
-    addLog("KLD7 initialized.");
-    getRadarParameters();
+    if (r == OK) {
+        addLog("KLD7 initialized.");
+        getRadarParameters();
+        inited = true;
+    } else {
+        addLog("KLD7 failed to initialized.");
+        return UART_ERROR;
+    }
 
     return r;
 }
@@ -240,11 +245,9 @@ KLD7::RESPONSE KLD7::getNextFrameData() {
         if (headerBuffer[0] == 'T' && headerBuffer[1] == 'D' && headerBuffer[2] == 'A' && headerBuffer[3] == 'T') {
             if (headerBuffer[4] > 0) { // target data
                 radarConnection->readBytes(tdatBuffer, sizeof(tdatBuffer));
-                /*
-                sprintf(formattingBuffer, "TDAT data [%x%x%x%x%x%x%x%x]",
+                sprintf(formattingBuffer, "TDAT:%02x%02x%02x%02x%02x%02x%02x%02x",
                         tdatBuffer[0], tdatBuffer[1], tdatBuffer[2], tdatBuffer[3], tdatBuffer[4], tdatBuffer[5], tdatBuffer[6], tdatBuffer[7]);
-                addLog(formattingBuffer);
-                */
+                Serial1.println(formattingBuffer);
 
                 // metric units. speed,angle,magnitude are scaled x 100
                 lastReadTDAT.distance = tdatBuffer[1] << 8 | tdatBuffer[0];
@@ -286,12 +289,11 @@ KLD7::RESPONSE KLD7::getNextFrameData() {
                 lastDetectedTDAT.f_speed = lastReadTDAT.speed / 100.0;
                 lastDetectedTDAT.f_angle = lastReadTDAT.angle / 100.0;
                 lastDetectedTDAT.f_magnitude = lastReadTDAT.magnitude / 100.0;
+
+                sprintf(formattingBuffer, "DDAT:%x%x%x%x%x%x",
+                        ddatBuffer[0], ddatBuffer[1], ddatBuffer[2], ddatBuffer[3], ddatBuffer[4], ddatBuffer[5]);
+                Serial1.println(formattingBuffer);
             }
-            /*
-            sprintf(formattingBuffer, "DDAT data [%x%x%x%x%x%x]",
-                    ddatBuffer[0], ddatBuffer[1], ddatBuffer[2], ddatBuffer[3], ddatBuffer[4], ddatBuffer[5]);
-            addLog(formattingBuffer);
-            */
          }
     }
     
@@ -326,6 +328,7 @@ void KLD7::addLog(const char* s) {
     strncpy(msgLogs[logCount], s, sizeof(msgLogs[0]));
     msgLogs[logCount][sizeof(msgLogs[0])-1] = 0; // make sure it is null terminated
     logCount += 1;
+    Serial1.println(s);
 }
 
 /**

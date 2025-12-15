@@ -118,6 +118,7 @@ public:
                         int16_t angle,
                         uint16_t magnitude);
 
+    boolean inited = false;
     RESPONSE init();
     RESPONSE resetFactoryDefaults();
     RESPONSE getRadarParameters();
